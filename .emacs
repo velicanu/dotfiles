@@ -4,7 +4,45 @@
 ;; (setq inhibit-default-init t)
 
 
+(load-file "~/.emacs.d/yaml-mode.el")
+(require 'yaml-mode)
+(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+
+;; Added by Package.el.  This must come before configurations of
+;; installed packages.  Don't delete this line.  If you don't want it,
+;; just comment it out by adding a semicolon to the start of the line.
+;; You may delete these explanatory comments.
+
+
+(setq-default indent-tabs-mode nil)
+
+(require 'package)
+(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  (when no-ssl
+    (warn "\
+Your version of Emacs does not support SSL connections,
+which is unsafe because it allows man-in-the-middle attacks.
+There are two things you can do about this warning:
+1. Install an Emacs version that does support SSL and be safe.
+2. Remove this warning from your init file so you won't see it again."))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+  (when (< emacs-major-version 24)
+    ;; For important compatibility libraries like cl-lib
+    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+(package-initialize)
+
 (load-file "~/.emacs.d/xclip.el")
+(load-file "~/git/blacken/blacken.el")
+(add-hook 'python-mode-hook 'blacken-mode)
+
+(load-file "~/.emacs.d/jq-mode.el")
+(autoload 'jq-mode "jq-mode.el"
+    "Major mode for editing jq files" t)
+(add-to-list 'auto-mode-alist '("\\.jq$" . jq-mode))
 
 ;; turn on font-lock mode
 (when (fboundp 'global-font-lock-mode)
@@ -50,10 +88,15 @@
   (interactive "p")
   (move-line (if (null n) 1 n)))
 
-(global-set-key (kbd "M-<up>") 'move-line-up)
-(global-set-key (kbd "M-<down>") 'move-line-down)
+;; (global-set-key (kbd "ESC C-<up>") 'move-line-up)
+;; (global-set-key (kbd "ESC C-<down>") 'move-line-down)
 
 
+(defun up-10 ()
+  (interactive)
+  forward-line 10
+)
+  
 (defun copy-line (arg)
   "Copy lines (as many as prefix argument) in the kill ring.
     Ease of use features:
@@ -89,12 +132,17 @@
 
 
 ;; optional key binding
+;; (global-set-key (kbd "ESC <up>") 'copy-line)
+
 
 (defvar my-keys-minor-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-d") 'copy-line)
+    (define-key map (kbd "ESC <up>") (lambda () (interactive) (forward-line -5)) )
+    (define-key map (kbd "ESC <down>") (lambda () (interactive) (forward-line 5)) )
     (define-key map (kbd "C-q") 'comment-or-uncomment-region-or-line)
     (define-key map (kbd "C-l") 'kill-whole-line)
+    ;; (define-key map (kbd "C-x C-u") 'undo)
     ;; (define-key map (kbd "C-f") 'copy-file-name-to-clipboard)
     map)
   "my-keys-minor-mode keymap.")
@@ -126,7 +174,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(inhibit-startup-screen t))
+ '(inhibit-startup-screen t)
+ '(package-selected-packages (quote (dumb-jump ##))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
