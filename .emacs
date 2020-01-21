@@ -4,9 +4,24 @@
 ;; (setq inhibit-default-init t)
 
 
-(load-file "~/.emacs.d/yaml-mode.el")
-(require 'yaml-mode)
-(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+;; backup in one place. flat, no tree structure
+;; (setq backup-directory-alist '(("" . "~/.emacs.d/backup")))
+                                        ; (setq auto-save-file-name-transforms '(("" . "~/.emacs.d/autosave")))
+  
+(setq backup-directory-alist
+      `(("." . ,(concat user-emacs-directory "backups"))))
+(setq auto-save-file-name-transforms
+      `((".*" ,(concat user-emacs-directory "autosaves") t)))
+(setq auto-save-list-file-prefix
+      (concat user-emacs-directory "autosaves"))
+
+(setq-default js-indent-level 2)
+
+
+
+; (load-file "~/.emacs.d/yaml-mode.el")
+; (require 'yaml-mode)
+; (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
 
 ;; Added by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
@@ -35,14 +50,27 @@ There are two things you can do about this warning:
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
-(load-file "~/.emacs.d/xclip.el")
+;; open any file
+(define-key global-map (kbd "C-c .") 'find-file-at-point)
+(define-key global-map (kbd "C-c o") 'other-window)
+(define-key global-map (kbd "C-c /") 'isearch-forward-symbol-at-point)
+
+;; Python Stuff
+; (load-file "~/.emacs.d/xclip.el")
 (load-file "~/git/blacken/blacken.el")
 (add-hook 'python-mode-hook 'blacken-mode)
+(add-hook 'python-mode-hook 'jedi:setup)
+;; (setq jedi:complete-on-dot t)                 ; optional
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode))
 
-(load-file "~/.emacs.d/jq-mode.el")
-(autoload 'jq-mode "jq-mode.el"
-    "Major mode for editing jq files" t)
-(add-to-list 'auto-mode-alist '("\\.jq$" . jq-mode))
+
+
+;(load-file "~/.emacs.d/jq-mode.el")
+;(autoload 'jq-mode "jq-mode.el"
+;    "Major mode for editing jq files" t)
+;(add-to-list 'auto-mode-alist '("\\.jq$" . jq-mode))
 
 ;; turn on font-lock mode
 (when (fboundp 'global-font-lock-mode)
@@ -87,6 +115,31 @@ There are two things you can do about this warning:
   "Move the current line down by N lines."
   (interactive "p")
   (move-line (if (null n) 1 n)))
+
+(defun xah-paste-or-paste-previous ()
+  "Paste. When called repeatedly, paste previous.
+This command calls `yank', and if repeated, call `yank-pop'.
+
+When `universal-argument' is called first with a number arg, paste that many times.
+
+URL `http://ergoemacs.org/emacs/emacs_paste_or_paste_previous.html'
+Version 2017-07-25"
+  (interactive)
+  (progn
+    (when (and delete-selection-mode (region-active-p))
+      (delete-region (region-beginning) (region-end)))
+    (if current-prefix-arg
+        (progn
+          (dotimes ($i (prefix-numeric-value current-prefix-arg))
+            (yank)))
+      (if (eq real-last-command this-command)
+          (yank-pop 1)
+        (yank)))))
+;; (defun yank-last (n)
+  ;; "Move the current line down by N lines."
+  ;; (interactive "P")
+  ;; (yank 1))
+  ;; (yank-pop 2))
 
 ;; (global-set-key (kbd "ESC C-<up>") 'move-line-up)
 ;; (global-set-key (kbd "ESC C-<down>") 'move-line-down)
@@ -138,10 +191,15 @@ There are two things you can do about this warning:
 (defvar my-keys-minor-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-d") 'copy-line)
+    (define-key map (kbd "ESC l") (lambda () (interactive) (forward-line -5)) )
     (define-key map (kbd "ESC <up>") (lambda () (interactive) (forward-line -5)) )
+    (define-key map (kbd "ESC j") (lambda () (interactive) (forward-line 5)) )
     (define-key map (kbd "ESC <down>") (lambda () (interactive) (forward-line 5)) )
     (define-key map (kbd "C-q") 'comment-or-uncomment-region-or-line)
     (define-key map (kbd "C-l") 'kill-whole-line)
+    (define-key map (kbd "C-M-y") `xah-paste-or-paste-previous)
+    (define-key map (kbd "C-f") `forward-sexp)
+    (define-key map (kbd "C-b") `backward-sexp)
     ;; (define-key map (kbd "C-x C-u") 'undo)
     ;; (define-key map (kbd "C-f") 'copy-file-name-to-clipboard)
     map)
@@ -168,17 +226,52 @@ There are two things you can do about this warning:
 (define-key global-map "\e[1;10A" (kbd "M-S-<up>"))
 (define-key global-map "\e[1;10B" (kbd "M-S-<down>"))
 
+(show-paren-mode 1)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(flycheck-flake8-maximum-line-length 88)
  '(inhibit-startup-screen t)
- '(package-selected-packages (quote (dumb-jump ##))))
+ '(package-selected-packages
+   (quote
+    (gnu-elpa-keyring-update vue-mode py-isort isortify pylint company-tabnine company dockerfile-mode terraform-mode use-package flycheck jedi dumb-jump ##))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(add-hook 'before-save-hook 'py-isort-before-save)
+
+
+
+(use-package company
+  :ensure t)
+(add-hook 'after-init-hook 'global-company-mode)
+(use-package company-tabnine :ensure t)
+(add-to-list 'company-backends #'company-tabnine)
+;; M-x company-tabnine-install-binary  ;; to install binary
+;; Trigger completion immediately.
+(setq company-idle-delay 0)
+(eval-after-load 'company
+  '(progn
+     (define-key company-active-map (kbd "TAB") 'company-complete-selection)))
+
+(defadvice auto-complete-mode (around disable-auto-complete-for-python)
+  (unless (eq major-mode 'python-mode) ad-do-it))
+
+(ad-activate 'auto-complete-mode)
+
+(defun vue-mode/init-vue-mode ()
+  (use-package vue-mode
+               :config
+               ;; 0, 1, or 2, representing (respectively) none, low, and high coloring
+               (setq mmm-submode-decoration-level 2)))
+
+(add-hook 'mmm-mode-hook
+          (lambda ()
+            (set-face-background 'mmm-default-submode-face nil)))
